@@ -68,6 +68,7 @@ func addr[T any](v T) *T {
 func NewDefaultKoanf(ctx context.Context) (*koanf.Koanf, error) {
 	c := Config{
 		All:                         addr(false),
+		Anchors:                     map[string]any{},
 		Dir:                         addr("{{.InterfaceDir}}"),
 		FileName:                    addr("mocks_test.go"),
 		ForceFileWrite:              addr(true),

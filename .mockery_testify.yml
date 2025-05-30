@@ -1,3 +1,5 @@
+_anchors:
+  foo: bar
 template: "testify"
 force-file-write: true
 formatter: "goimports"
