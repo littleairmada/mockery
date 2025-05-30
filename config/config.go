@@ -577,7 +577,13 @@ var ErrInfiniteLoop = fmt.Errorf("infinite loop in template variables detected")
 // interface being mocked. If this argument is nil, interface-specific template
 // variables will be set to the empty string. The srcPkg is also needed to
 // satisfy template variables regarding the source package.
-func (c *Config) ParseTemplates(ctx context.Context, ifaceFileName string, ifaceName string, srcPkg *packages.Package) error {
+func (c *Config) ParseTemplates(
+	ctx context.Context,
+	// ifaceFilePath is the absolute path of the original interface.
+	ifaceFilePath string,
+	ifaceName string,
+	srcPkg *packages.Package,
+) error {
 	log := zerolog.Ctx(ctx)
 
 	mock := "mock"
@@ -585,36 +591,39 @@ func (c *Config) ParseTemplates(ctx context.Context, ifaceFileName string, iface
 		mock = "Mock"
 	}
 
-	var (
-		interfaceDir         string
-		interfaceDirRelative string
-		interfaceFile        string
-		interfaceName        string
-	)
-	interfaceFile = ifaceFileName
-	interfaceName = ifaceName
-
 	workingDir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
-	interfaceDirPath := pathlib.NewPath(ifaceFileName).Parent()
-	interfaceDir = interfaceDirPath.String()
+	interfaceDirPath := pathlib.NewPath(ifaceFilePath).Parent()
 	interfaceDirRelativePath, err := interfaceDirPath.RelativeToStr(workingDir)
+
+	var interfaceDirRelative string
+
 	if err != nil {
-		log.Debug().Err(err).Msg("can't make path relative to working dir, setting to './'")
+		log.Debug().
+			Err(err).
+			Str("working-dir", workingDir).
+			Str("interfaceDirPath", interfaceDirPath.String()).
+			Str("interface-dir-relative-path", interfaceDirRelativePath.String()).
+			Msg("can't make path relative to working dir, setting to './'")
 		interfaceDirRelative = "."
 	} else {
+		log.Debug().
+			Str("working-dir", workingDir).
+			Str("interfaceDirPath", interfaceDirPath.String()).
+			Str("interface-dir-relative-path", interfaceDirRelativePath.String()).
+			Msg("found relative path")
 		interfaceDirRelative = interfaceDirRelativePath.String()
 	}
 
 	// data is the struct sent to the template parser
 	data := TemplateData{
 		ConfigDir:            filepath.Dir(*c.ConfigFile),
-		InterfaceDir:         interfaceDir,
+		InterfaceDir:         interfaceDirPath.String(),
 		InterfaceDirRelative: interfaceDirRelative,
-		InterfaceFile:        interfaceFile,
-		InterfaceName:        interfaceName,
+		InterfaceFile:        ifaceFilePath,
+		InterfaceName:        ifaceName,
 		Mock:                 mock,
 		StructName:           *c.StructName,
 		SrcPackageName:       srcPkg.Types.Name(),
