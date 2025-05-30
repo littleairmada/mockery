@@ -135,13 +135,9 @@ func NewTemplateGenerator(
 	pkgConfig *config.Config,
 	pkgName string,
 ) (*TemplateGenerator, error) {
+	log := *zerolog.Ctx(ctx)
+
 	srcPkgFSPath := pathlib.NewPath(srcPkg.GoFiles[0]).Parent()
-	log := zerolog.Ctx(ctx).With().
-		Stringer("srcPkgFSPath", srcPkgFSPath).
-		Stringer("outPkgFSPath", outPkgFSPath).
-		Str("src-pkg-name", srcPkg.Name).
-		Str("out-pkg-name", pkgName).
-		Logger()
 	if !outPkgFSPath.IsAbsolute() {
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -150,6 +146,17 @@ func NewTemplateGenerator(
 		}
 		outPkgFSPath = pathlib.NewPath(cwd).JoinPath(outPkgFSPath)
 	}
+	srcPkgFSPath = srcPkgFSPath.Clean()
+	outPkgFSPath = outPkgFSPath.Clean()
+
+	newLogger := zerolog.Ctx(ctx).With().
+		Stringer("srcPkgFSPath", srcPkgFSPath).
+		Stringer("outPkgFSPath", outPkgFSPath).
+		Str("src-pkg-name", srcPkg.Name).
+		Str("out-pkg-name", pkgName).
+		Logger()
+	log = newLogger
+
 	outPkgPath, err := findPkgPath(outPkgFSPath)
 	if err != nil {
 		log.Err(err).Msg("failed to find output package path")

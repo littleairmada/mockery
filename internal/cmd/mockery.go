@@ -263,7 +263,7 @@ func (r *RootApp) Run() error {
 		}
 		ifaceConfig := pkgConfig.GetInterfaceConfig(ctx, iface.Name)
 		for _, ifaceConfig := range ifaceConfig.Configs {
-			if err := ifaceConfig.ParseTemplates(ifaceCtx, iface.FileName, iface.Name, iface.Pkg); err != nil {
+			if err := ifaceConfig.ParseTemplates(ifaceCtx, iface.FilePath, iface.Name, iface.Pkg); err != nil {
 				log.Err(err).Msg("Can't parse config templates for interface")
 				return err
 			}
@@ -279,6 +279,7 @@ func (r *RootApp) Run() error {
 					*ifaceConfig.PkgName,
 					*ifaceConfig.Template,
 				)
+				log.Debug().Str("file-path", filePath.String()).Msg("creating new interface collection")
 			}
 			if err := mockFileToInterfaces[filePath.String()].Append(
 				ctx,
@@ -286,8 +287,8 @@ func (r *RootApp) Run() error {
 					iface.Name,
 					iface.TypeSpec,
 					iface.GenDecl,
-					iface.FileName,
-					iface.File,
+					iface.FilePath,
+					iface.FileSyntax,
 					iface.Pkg,
 					ifaceConfig),
 			); err != nil {
