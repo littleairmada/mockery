@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
-	"github.com/chigopher/pathlib"
 	"github.com/rs/zerolog"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -36,8 +36,8 @@ func httpsGet(ctx context.Context, url string) (string, error) {
 
 func download(ctx context.Context, url string) (string, error) {
 	if strings.HasPrefix(url, "file://") {
-		templatePath := pathlib.NewPath(strings.SplitAfterN(url, "file://", 2)[1])
-		b, err := templatePath.ReadFile()
+		templatePath := strings.SplitAfterN(url, "file://", 2)[1]
+		b, err := os.ReadFile(templatePath)
 		if err != nil {
 			return "", err
 		}

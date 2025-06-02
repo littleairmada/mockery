@@ -4,28 +4,31 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
-	"github.com/chigopher/pathlib"
+	"github.com/vektra/mockery/v3/internal/file"
 )
 
-func FindConfig() (*pathlib.Path, error) {
+func FindConfig() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return nil, fmt.Errorf("getting current working directory: %w", err)
+		return "", fmt.Errorf("getting current working directory: %w", err)
 	}
-	currentPath := pathlib.NewPath(cwd)
-	for len(currentPath.Parts()) != 1 {
+	currentPath := filepath.ToSlash(cwd)
+	for currentPath != "" {
 		for _, confName := range []string{".mockery.yaml", ".mockery.yml"} {
-			configPath := currentPath.Join(confName)
-			isFile, err := configPath.Exists()
+			configPath := path.Join(currentPath, confName)
+			exists, err := file.Exists(configPath)
 			if err != nil {
-				return nil, fmt.Errorf("checking if %s is file: %w", configPath.String(), err)
+				return "", fmt.Errorf("checking if %s exists: %w", configPath, err)
 			}
-			if isFile {
+			if exists {
 				return configPath, nil
 			}
 		}
-		currentPath = currentPath.Parent()
+		currentPath = path.Dir(strings.TrimRight(currentPath, "/"))
 	}
-	return nil, errors.New("mockery config file not found")
+	return "", errors.New("mockery config file not found")
 }

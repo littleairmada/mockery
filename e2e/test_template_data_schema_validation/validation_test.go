@@ -1,19 +1,19 @@
 package test_template_exercise
 
 import (
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
 
-	"github.com/chigopher/pathlib"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestExercise(t *testing.T) {
 	t.Parallel()
-	outfile := pathlib.NewPath("./exercise.txt")
+	outfile := "./exercise.txt"
 	//nolint:errcheck
-	defer outfile.Remove()
+	defer os.Remove(outfile)
 
 	out, err := exec.Command(
 		"go", "run", "github.com/vektra/mockery/v3",

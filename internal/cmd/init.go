@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chigopher/pathlib"
 	"github.com/spf13/cobra"
 	"github.com/vektra/mockery/v3/config"
 	"github.com/vektra/mockery/v3/internal/logging"
@@ -71,8 +70,8 @@ func initRun(args []string, params argGetter) {
 		},
 	}
 
-	outFile := pathlib.NewPath(filename)
-	f, err := outFile.OpenFile(os.O_RDWR | os.O_CREATE | os.O_EXCL)
+	outFile := filename
+	f, err := os.OpenFile(outFile, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o644)
 	if err != nil {
 		log.Err(err).Msg("failed to open file")
 		os.Exit(1)
