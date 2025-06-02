@@ -15,6 +15,15 @@ package {{.PkgName}}
     {{- $_ := .Registry.AddImport "sync" "sync" }}
 {{- end }}
 
+{{- if ne .PkgName .Registry.SrcPkg.Name }}
+  {{- range .Interfaces }}
+    {{- if not (index .TemplateData "skip-ensure") }}
+      {{- $_ := $.Registry.AddImport $.SrcPkgQualifier $.Registry.SrcPkg.PkgPath }}
+      {{- break }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
 import (
 {{- range .Imports}}
 	{{ .ImportStatement }}
