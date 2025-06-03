@@ -10,7 +10,6 @@ import (
 	"go/format"
 	"go/token"
 	"go/types"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -109,7 +108,7 @@ func NewTemplateGenerator(
 	log := *zerolog.Ctx(ctx)
 	var err error
 
-	srcPkgFSPath := path.Dir(srcPkg.GoFiles[0])
+	srcPkgFSPath := filepath.Dir(srcPkg.GoFiles[0])
 	if !filepath.IsAbs(outPkgFSPath) {
 		outPkgFSPath, err = filepath.Abs(outPkgFSPath)
 		if err != nil {

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -313,7 +312,7 @@ func (r *RootApp) Run() error {
 			return err
 		}
 
-		interfacesInFileDir := path.Dir(interfacesInFile.outFilePath)
+		interfacesInFileDir := filepath.ToSlash(filepath.Dir(interfacesInFile.outFilePath))
 		generator, err := pkg.NewTemplateGenerator(
 			fileCtx,
 			interfacesInFile.srcPkg,
@@ -335,7 +334,7 @@ func (r *RootApp) Run() error {
 			return err
 		}
 
-		outFileDir := filepath.Dir(outFilePath)
+		outFileDir := filepath.ToSlash(filepath.Dir(outFilePath))
 		if outFileDir != "" {
 			if err := os.MkdirAll(outFileDir, 0o755); err != nil {
 				log.Err(err).Msg("failed to mkdir parent directories of mock file")
