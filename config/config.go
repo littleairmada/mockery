@@ -594,9 +594,10 @@ func (c *Config) ParseTemplates(
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
+	workingDir = filepath.ToSlash(workingDir)
 	ifaceFilePath = filepath.ToSlash(filepath.Clean(ifaceFilePath))
 	interfaceDirPath := filepath.ToSlash(filepath.Dir(ifaceFilePath))
-	interfaceDirRelativePath, err := filepath.Rel(workingDir, interfaceDirPath)
+	interfaceDirRelativePath, err := filepath.Rel(filepath.FromSlash(workingDir), filepath.FromSlash(interfaceDirPath))
 
 	var interfaceDirRelative string
 

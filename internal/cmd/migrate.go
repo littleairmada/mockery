@@ -146,7 +146,7 @@ func run(ctx context.Context, confPathStr string, v3ConfPath string) error {
 	log.Info().Msg("using config")
 
 	var v2 V2RootConfig
-	f, err := os.OpenFile(confPath, os.O_RDONLY, 0o644)
+	f, err := os.Open(confPath)
 	if err != nil {
 		return fmt.Errorf("opening config file: %w", err)
 	}
@@ -203,7 +203,7 @@ func run(ctx context.Context, confPathStr string, v3ConfPath string) error {
 	}
 
 	outFile := v3ConfPath
-	file, err := os.OpenFile(outFile, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0o644)
+	file, err := os.Create(outFile)
 	if err != nil {
 		return fmt.Errorf("opening .mockery_v3.yml: %w", err)
 	}

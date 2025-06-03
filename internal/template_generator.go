@@ -10,7 +10,6 @@ import (
 	"go/format"
 	"go/token"
 	"go/types"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -59,49 +58,19 @@ var jsonSchemas = map[string]string{
 // findPkgPath returns the fully-qualified go import path of a given dir. The
 // dir must be relative to a go.mod file. In the case it isn't, an error is returned.
 func findPkgPath(dirPath string) (string, error) {
-	if err := os.MkdirAll(dirPath, 0o755); err != nil {
-		return "", stackerr.NewStackErr(err)
-	}
-	dir, err := filepath.EvalSymlinks(dirPath)
+	dirPath, err := file.CleanPath(dirPath)
 	if err != nil {
 		return "", stackerr.NewStackErr(err)
 	}
-	dir, err = filepath.Abs(dir)
+	goModFile, content, err := file.FindInHierarchy(dirPath, []string{"go.mod"})
 	if err != nil {
 		return "", stackerr.NewStackErr(err)
 	}
-	var goModFile string
-	cursor := filepath.ToSlash(dir)
-	for i := 0; ; i++ {
-		if i == 1000 {
-			return "", stackerr.NewStackErr(errors.New("failed to find go.mod after 1000 iterations"))
-		}
-		goMod := path.Join(cursor, "go.mod")
-		exists, err := file.Exists(goMod)
-		if err != nil {
-			return "", stackerr.NewStackErr(err)
-		}
-		if exists {
-			goModFile = goMod
-			break
-		}
-		parent := path.Dir(strings.TrimRight(cursor, "/"))
-		// Hit the root path
-		if cursor == parent {
-			return "", stackerr.NewStackErrf(
-				ErrGoModNotFound, "parsing package path for %s", dir)
-		}
-		cursor = parent
-	}
-	dirRelative, err := filepath.Rel(filepath.Dir(goModFile), dir)
+	dirRelative, err := filepath.Rel(filepath.FromSlash(filepath.Dir(goModFile)), filepath.FromSlash(dirPath))
 	if err != nil {
 		return "", stackerr.NewStackErr(err)
 	}
-	fileBytes, err := os.ReadFile(goModFile)
-	if err != nil {
-		return "", stackerr.NewStackErr(err)
-	}
-	scanner := bufio.NewScanner(bytes.NewReader(fileBytes))
+	scanner := bufio.NewScanner(bytes.NewReader(content))
 	// Iterate over each line
 	for scanner.Scan() {
 		if !strings.HasPrefix(scanner.Text(), "module") {
@@ -143,6 +112,13 @@ func NewTemplateGenerator(
 	srcPkgFSPath := path.Dir(srcPkg.GoFiles[0])
 	if !filepath.IsAbs(outPkgFSPath) {
 		outPkgFSPath, err = filepath.Abs(outPkgFSPath)
+		if err != nil {
+			log.Err(err).Msg("failed to make absolute path")
+			return nil, stackerr.NewStackErr(err)
+		}
+	}
+	if !filepath.IsAbs(srcPkgFSPath) {
+		srcPkgFSPath, err = filepath.Abs(srcPkgFSPath)
 		if err != nil {
 			log.Err(err).Msg("failed to make absolute path")
 			return nil, stackerr.NewStackErr(err)

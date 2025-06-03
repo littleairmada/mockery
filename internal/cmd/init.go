@@ -71,7 +71,7 @@ func initRun(args []string, params argGetter) {
 	}
 
 	outFile := filename
-	f, err := os.OpenFile(outFile, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o644)
+	f, err := os.Create(outFile)
 	if err != nil {
 		log.Err(err).Msg("failed to open file")
 		os.Exit(1)

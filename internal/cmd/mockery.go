@@ -353,7 +353,12 @@ func (r *RootApp) Run() error {
 			return fmt.Errorf("outfile exists")
 		}
 
-		if err := os.WriteFile(outFilePath, templateBytes, 0o600); err != nil {
+		file, err := os.Create(outFilePath)
+		if err != nil {
+			return stackerr.NewStackErr(err)
+		}
+		defer file.Close()
+		if _, err = file.Write(templateBytes); err != nil {
 			return stackerr.NewStackErr(err)
 		}
 	}
