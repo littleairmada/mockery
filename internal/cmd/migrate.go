@@ -150,6 +150,7 @@ func run(ctx context.Context, confPathStr string, v3ConfPath string) error {
 	if err != nil {
 		return fmt.Errorf("opening config file: %w", err)
 	}
+	defer f.Close()
 	decoder := yaml.NewDecoder(f)
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&v2); err != nil {
