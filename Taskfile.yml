@@ -17,8 +17,8 @@ tasks:
   mocks:
     desc: generate new mocks from scratch
     cmds:
-      - task mocks.remove
-      - task mocks.generate
+      - task: mocks.remove
+      - task: mocks.generate
 
   mocks.remove:
     desc: remove all mock files
