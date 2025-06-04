@@ -31,3 +31,12 @@ packages:
           - structname: StubMatyer{{.InterfaceName}}
             template-data:
               stub-impl: True
+  github.com/vektra/mockery/v3/internal/fixtures/output_dir:
+    interfaces:
+      OutputDirWithDifferentPkgName:
+        config:
+          dir: "{{.InterfaceDir}}/mock"
+          pkgname: "mock"
+      OutputDirWithSamePkgNameAsSrc:
+        config:
+          dir: "{{.InterfaceDir}}/output_dir"
