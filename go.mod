@@ -4,7 +4,6 @@ go 1.23.7
 
 require (
 	github.com/brunoga/deep v1.2.4
-	github.com/chigopher/pathlib v0.19.1
 	github.com/go-viper/mapstructure/v2 v2.2.1
 	github.com/huandu/xstrings v1.5.0
 	github.com/jedib0t/go-pretty/v6 v6.6.7
@@ -39,7 +38,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/spf13/afero v1.11.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect

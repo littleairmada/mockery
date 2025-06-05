@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/chigopher/pathlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -55,7 +55,7 @@ func Test_initRun(t *testing.T) {
 			config := filepath.Join(tmpDir, "out.yml")
 			initRun(tt.args.args, tt.args.params(t, config))
 
-			b, err := pathlib.NewPath(config).ReadFile()
+			b, err := os.ReadFile(config)
 			require.NoError(t, err)
 			assert.Equal(t, expectedConfig, string(b))
 		})

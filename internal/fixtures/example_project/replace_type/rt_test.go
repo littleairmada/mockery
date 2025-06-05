@@ -1,17 +1,17 @@
 package replace_type
 
 import (
+	"os"
 	"strings"
 	"testing"
 
-	"github.com/chigopher/pathlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestReplaceType(t *testing.T) {
-	mockFile := pathlib.NewPath("./mocks_testify_replace_type_test.go")
-	b, err := mockFile.ReadFile()
+	mockFile := "./mocks_testify_replace_type_test.go"
+	b, err := os.ReadFile(mockFile)
 	require.NoError(t, err)
 	// .mockery.yml replaced github.com/vektra/mockery/v3/internal/fixtures/example_project/replace_type/rti/rt1
 	// with github.com/vektra/mockery/v3/internal/fixtures/example_project/replace_type/rti/rt2

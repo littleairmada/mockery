@@ -1,10 +1,10 @@
 package type_alias_test
 
 import (
+	"os"
 	"regexp"
 	"testing"
 
-	"github.com/chigopher/pathlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,8 +24,7 @@ func TestTypeAlias(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			regex, err := regexp.Compile(tt.expectedRegex)
 			require.NoError(t, err)
-			path := pathlib.NewPath(tt.filepath)
-			bytes, err := path.ReadFile()
+			bytes, err := os.ReadFile(tt.filepath)
 			require.NoError(t, err)
 
 			assert.True(t, regex.Match(bytes), "expected regex was not found in file")

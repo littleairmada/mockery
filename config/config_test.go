@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path"
 	"testing"
 
-	"github.com/chigopher/pathlib"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,13 +32,13 @@ packages:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			configFile := pathlib.NewPath(t.TempDir()).Join("config.yaml")
-			require.NoError(t, configFile.WriteFile([]byte(tt.config)))
+			configFile := path.Join(t.TempDir(), "config.yaml")
+			require.NoError(t, os.WriteFile(configFile, []byte(tt.config), 0o600))
 
 			flags := pflag.NewFlagSet("test", pflag.ExitOnError)
 			flags.String("config", "", "")
 
-			require.NoError(t, flags.Parse([]string{"--config", configFile.String()}))
+			require.NoError(t, flags.Parse([]string{"--config", configFile}))
 
 			_, _, err := NewRootConfig(context.Background(), flags)
 			if tt.wantErr == nil {
@@ -57,16 +58,16 @@ packages:
 
 func TestNewRootConfigUnknownEnvVar(t *testing.T) {
 	t.Setenv("MOCKERY_UNKNOWN", "foo")
-	configFile := pathlib.NewPath(t.TempDir()).Join("config.yaml")
-	require.NoError(t, configFile.WriteFile([]byte(`
+	configFile := path.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(configFile, []byte(`
 packages:
   github.com/vektra/mockery/v3:
-`)))
+`), 0o600))
 
 	flags := pflag.NewFlagSet("test", pflag.ExitOnError)
 	flags.String("config", "", "")
 
-	require.NoError(t, flags.Parse([]string{"--config", configFile.String()}))
+	require.NoError(t, flags.Parse([]string{"--config", configFile}))
 	_, _, err := NewRootConfig(context.Background(), flags)
 	assert.NoError(t, err)
 }

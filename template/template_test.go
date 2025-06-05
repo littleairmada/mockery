@@ -105,6 +105,7 @@ func TestTemplateMockFuncs(t *testing.T) {
 			dataInit: func() Data {
 				f, err := os.CreateTemp(".", "readFileTest")
 				require.NoError(t, err)
+				defer f.Close()
 
 				t.Cleanup(func() {
 					os.Remove(f.Name())

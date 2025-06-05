@@ -5,15 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/vektra/mockery/v3/config"
 	"github.com/vektra/mockery/v3/internal"
 	pkg "github.com/vektra/mockery/v3/internal"
+	"github.com/vektra/mockery/v3/internal/file"
 	"github.com/vektra/mockery/v3/internal/logging"
 	"github.com/vektra/mockery/v3/internal/stackerr"
 
-	"github.com/chigopher/pathlib"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -99,7 +100,7 @@ type InterfaceCollection struct {
 	// 1. Package name of the output mock file
 	// 2. Source package path (only one package per output file is allowed)
 	srcPkgPath  string
-	outFilePath *pathlib.Path
+	outFilePath string
 	srcPkg      *packages.Package
 	outPkgName  string
 	interfaces  []*internal.Interface
@@ -108,7 +109,7 @@ type InterfaceCollection struct {
 
 func NewInterfaceCollection(
 	srcPkgPath string,
-	outFilePath *pathlib.Path,
+	outFilePath string,
 	srcPkg *packages.Package,
 	outPkgName string,
 	templ string,
@@ -124,8 +125,8 @@ func NewInterfaceCollection(
 }
 
 func (i *InterfaceCollection) Append(ctx context.Context, iface *internal.Interface) error {
-	collectionFilepath := i.outFilePath.String()
-	interfaceFilepath := iface.Config.FilePath().String()
+	collectionFilepath := i.outFilePath
+	interfaceFilepath := iface.Config.FilePath()
 	log := zerolog.Ctx(ctx).With().
 		Str(logging.LogKeyInterface, iface.Name).
 		Str("collection-pkgname", i.outPkgName).
@@ -168,7 +169,7 @@ func (r *RootApp) Run() error {
 		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
 		return err
 	}
-	log.Info().Str("config-file", r.Config.ConfigFileUsed().String()).Msgf("Starting mockery")
+	log.Info().Str("config-file", r.Config.ConfigFileUsed()).Msgf("Starting mockery")
 	ctx := log.WithContext(context.Background())
 
 	if err := r.Config.Initialize(ctx); err != nil {
@@ -267,21 +268,21 @@ func (r *RootApp) Run() error {
 				log.Err(err).Msg("Can't parse config templates for interface")
 				return err
 			}
-			filePath := ifaceConfig.FilePath().Clean()
-			ifaceLog.Info().Str("collection", filePath.String()).Msg("adding interface to collection")
+			filePath := ifaceConfig.FilePath()
+			ifaceLog.Info().Str("collection", filePath).Msg("adding interface to collection")
 
-			_, ok := mockFileToInterfaces[filePath.String()]
+			_, ok := mockFileToInterfaces[filePath]
 			if !ok {
-				mockFileToInterfaces[filePath.String()] = NewInterfaceCollection(
+				mockFileToInterfaces[filePath] = NewInterfaceCollection(
 					iface.Pkg.PkgPath,
 					filePath,
 					iface.Pkg,
 					*ifaceConfig.PkgName,
 					*ifaceConfig.Template,
 				)
-				log.Debug().Str("file-path", filePath.String()).Msg("creating new interface collection")
+				log.Debug().Str("file-path", filePath).Msg("creating new interface collection")
 			}
-			if err := mockFileToInterfaces[filePath.String()].Append(
+			if err := mockFileToInterfaces[filePath].Append(
 				ctx,
 				internal.NewInterface(
 					iface.Name,
@@ -311,10 +312,11 @@ func (r *RootApp) Run() error {
 			return err
 		}
 
+		interfacesInFileDir := filepath.ToSlash(filepath.Dir(interfacesInFile.outFilePath))
 		generator, err := pkg.NewTemplateGenerator(
 			fileCtx,
 			interfacesInFile.srcPkg,
-			interfacesInFile.outFilePath.Parent(),
+			interfacesInFileDir,
 			*packageConfig.Config.Template,
 			*packageConfig.Config.TemplateSchema,
 			*packageConfig.Config.RequireTemplateSchemaExists,
@@ -332,23 +334,30 @@ func (r *RootApp) Run() error {
 			return err
 		}
 
-		outFile := pathlib.NewPath(outFilePath)
-		if err := outFile.Parent().MkdirAll(); err != nil {
-			log.Err(err).Msg("failed to mkdir parent directories of mock file")
-			return stackerr.NewStackErr(err)
+		outFileDir := filepath.ToSlash(filepath.Dir(outFilePath))
+		if outFileDir != "" {
+			if err := os.MkdirAll(outFileDir, 0o755); err != nil {
+				log.Err(err).Msg("failed to mkdir parent directories of mock file")
+				return stackerr.NewStackErr(err)
+			}
 		}
 		fileLog.Info().Msg("Writing template to file")
-		outFileExists, err := outFile.Exists()
+		exists, err := file.Exists(outFilePath)
 		if err != nil {
 			fileLog.Err(err).Msg("can't determine if outfile exists")
 			return fmt.Errorf("determining if outfile exists: %w", err)
 		}
-		if outFileExists && !*packageConfig.Config.ForceFileWrite {
+		if exists && !*packageConfig.Config.ForceFileWrite {
 			fileLog.Error().Bool("force-file-write", *packageConfig.Config.ForceFileWrite).Msg("output file exists, can't write mocks")
 			return fmt.Errorf("outfile exists")
 		}
 
-		if err := outFile.WriteFile(templateBytes); err != nil {
+		file, err := os.Create(outFilePath)
+		if err != nil {
+			return stackerr.NewStackErr(err)
+		}
+		defer file.Close()
+		if _, err = file.Write(templateBytes); err != nil {
 			return stackerr.NewStackErr(err)
 		}
 	}
