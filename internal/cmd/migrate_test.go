@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"context"
+	"os"
+	"path"
 	"testing"
 
-	"github.com/chigopher/pathlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -284,13 +285,13 @@ packages:
 
 func TestMigrate(t *testing.T) {
 	tmpdir := t.TempDir()
-	v2File := pathlib.NewPath(tmpdir).Join("v2_config.yml")
-	v3File := pathlib.NewPath(tmpdir).Join("v3_config.yml")
+	v2File := path.Join(tmpdir, "v2_config.yml")
+	v3File := path.Join(tmpdir, "v3_config.yml")
 
-	require.NoError(t, v2File.WriteFile([]byte(v2ConfigExample)))
-	require.NoError(t, run(context.Background(), v2File.String(), v3File.String()))
+	require.NoError(t, os.WriteFile(v2File, []byte(v2ConfigExample), 0o600))
+	require.NoError(t, run(context.Background(), v2File, v3File))
 
-	b, err := v3File.ReadFile()
+	b, err := os.ReadFile(v3File)
 	require.NoError(t, err)
 	assert.Equal(t, expectedV3Conf, string(b))
 }

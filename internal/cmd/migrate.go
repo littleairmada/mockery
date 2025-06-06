@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/chigopher/pathlib"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/rs/zerolog"
@@ -129,7 +128,7 @@ func (t *tableWriter) Render() {
 }
 
 func run(ctx context.Context, confPathStr string, v3ConfPath string) error {
-	var confPath *pathlib.Path
+	var confPath string
 	var err error
 
 	log := zerolog.Ctx(ctx)
@@ -139,18 +138,19 @@ func run(ctx context.Context, confPathStr string, v3ConfPath string) error {
 			return fmt.Errorf("finding config: %w", err)
 		}
 	} else {
-		confPath = pathlib.NewPath(confPathStr)
+		confPath = confPathStr
 	}
 	log.UpdateContext(func(c zerolog.Context) zerolog.Context {
-		return c.Stringer("config", confPath)
+		return c.Str("config", confPath)
 	})
 	log.Info().Msg("using config")
 
 	var v2 V2RootConfig
-	f, err := confPath.OpenFile(os.O_RDONLY)
+	f, err := os.Open(confPath)
 	if err != nil {
 		return fmt.Errorf("opening config file: %w", err)
 	}
+	defer f.Close()
 	decoder := yaml.NewDecoder(f)
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&v2); err != nil {
@@ -203,8 +203,8 @@ func run(ctx context.Context, confPathStr string, v3ConfPath string) error {
 		}
 	}
 
-	outFile := pathlib.NewPath(v3ConfPath)
-	file, err := outFile.OpenFile(os.O_CREATE | os.O_RDWR | os.O_TRUNC)
+	outFile := v3ConfPath
+	file, err := os.Create(outFile)
 	if err != nil {
 		return fmt.Errorf("opening .mockery_v3.yml: %w", err)
 	}
@@ -214,7 +214,7 @@ func run(ctx context.Context, confPathStr string, v3ConfPath string) error {
 	defer encoder.Close()
 	encoder.SetIndent(2)
 
-	log.Info().Str("v3-config", outFile.String()).Msg("writing v3 config")
+	log.Info().Str("v3-config", outFile).Msg("writing v3 config")
 	if err := encoder.Encode(v3); err != nil {
 		return fmt.Errorf("encoding .mockery_v3.yml: %w", err)
 	}

@@ -20,7 +20,6 @@ import (
 	"text/template"
 
 	"github.com/brunoga/deep"
-	"github.com/chigopher/pathlib"
 	"github.com/go-viper/mapstructure/v2"
 	koanfYAML "github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/env"
@@ -93,14 +92,14 @@ type RootConfig struct {
 	Config     `koanf:",squash" yaml:",inline"`
 	Packages   map[string]*PackageConfig `koanf:"packages" yaml:"packages"`
 	koanf      *koanf.Koanf
-	configFile *pathlib.Path
+	configFile string
 }
 
 func NewRootConfig(
 	ctx context.Context,
 	flags *pflag.FlagSet,
 ) (*RootConfig, *koanf.Koanf, error) {
-	var configFile *pathlib.Path
+	var configFile string
 
 	log := zerolog.Ctx(ctx)
 	var err error
@@ -131,24 +130,24 @@ func NewRootConfig(
 
 	configFileFromEnv := os.Getenv("MOCKERY_CONFIG")
 	if configFileFromEnv != "" {
-		configFile = pathlib.NewPath(configFileFromEnv)
+		configFile = configFileFromEnv
 	}
-	if configFile == nil {
+	if configFile == "" {
 		configFileFromFlags, err := flags.GetString("config")
 		if err != nil {
 			return nil, nil, fmt.Errorf("getting --config from flags: %w", err)
 		}
 		if configFileFromFlags != "" {
-			configFile = pathlib.NewPath(configFileFromFlags)
+			configFile = configFileFromFlags
 		}
 	}
-	if configFile == nil {
+	if configFile == "" {
 		log.Debug().Msg("config file not specified, searching")
 		configFile, err = internalConfig.FindConfig()
 		if err != nil {
 			return nil, k, fmt.Errorf("discovering mockery config: %w", err)
 		}
-		log.Debug().Str("config-file", configFile.String()).Msg("config file found")
+		log.Debug().Str("config-file", configFile).Msg("config file found")
 	}
 	rootConfig.configFile = configFile
 
@@ -187,7 +186,7 @@ func NewRootConfig(
 		return nil, nil, stackerr.NewStackErr(err)
 	}
 
-	if err := k.Load(file.Provider(configFile.String()), koanfYAML.Parser()); err != nil {
+	if err := k.Load(file.Provider(configFile), koanfYAML.Parser()); err != nil {
 		return nil, k, fmt.Errorf("loading config file: %w", err)
 	}
 
@@ -212,7 +211,7 @@ func NewRootConfig(
 	return &rootConfig, k, nil
 }
 
-func (c *RootConfig) ConfigFileUsed() *pathlib.Path {
+func (c *RootConfig) ConfigFileUsed() string {
 	return c.configFile
 }
 
@@ -551,8 +550,8 @@ func (c Config) koanfTagNames() map[string]struct{} {
 	return tags
 }
 
-func (c *Config) FilePath() *pathlib.Path {
-	return pathlib.NewPath(*c.Dir).Join(*c.FileName).Clean()
+func (c *Config) FilePath() string {
+	return filepath.ToSlash(filepath.Clean(filepath.Join(*c.Dir, *c.FileName)))
 }
 
 func (c *Config) ShouldExcludeSubpkg(pkgPath string) bool {
@@ -595,8 +594,10 @@ func (c *Config) ParseTemplates(
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
-	interfaceDirPath := pathlib.NewPath(ifaceFilePath).Parent()
-	interfaceDirRelativePath, err := interfaceDirPath.RelativeToStr(workingDir)
+	workingDir = filepath.ToSlash(workingDir)
+	ifaceFilePath = filepath.ToSlash(filepath.Clean(ifaceFilePath))
+	interfaceDirPath := filepath.ToSlash(filepath.Dir(ifaceFilePath))
+	interfaceDirRelativePath, err := filepath.Rel(filepath.FromSlash(workingDir), filepath.FromSlash(interfaceDirPath))
 
 	var interfaceDirRelative string
 
@@ -604,23 +605,24 @@ func (c *Config) ParseTemplates(
 		log.Debug().
 			Err(err).
 			Str("working-dir", workingDir).
-			Str("interfaceDirPath", interfaceDirPath.String()).
-			Str("interface-dir-relative-path", interfaceDirRelativePath.String()).
+			Str("interfaceDirPath", interfaceDirPath).
+			Str("interface-dir-relative-path", interfaceDirRelativePath).
 			Msg("can't make path relative to working dir, setting to './'")
 		interfaceDirRelative = "."
 	} else {
+		interfaceDirRelativePath = filepath.ToSlash(interfaceDirRelativePath)
 		log.Debug().
 			Str("working-dir", workingDir).
-			Str("interfaceDirPath", interfaceDirPath.String()).
-			Str("interface-dir-relative-path", interfaceDirRelativePath.String()).
+			Str("interfaceDirPath", interfaceDirPath).
+			Str("interface-dir-relative-path", interfaceDirRelativePath).
 			Msg("found relative path")
-		interfaceDirRelative = interfaceDirRelativePath.String()
+		interfaceDirRelative = interfaceDirRelativePath
 	}
 
 	// data is the struct sent to the template parser
 	data := TemplateData{
 		ConfigDir:            filepath.Dir(*c.ConfigFile),
-		InterfaceDir:         interfaceDirPath.String(),
+		InterfaceDir:         interfaceDirPath,
 		InterfaceDirRelative: interfaceDirRelative,
 		InterfaceFile:        ifaceFilePath,
 		InterfaceName:        ifaceName,

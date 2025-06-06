@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"os/exec"
+	"path"
 	"testing"
 
-	"github.com/chigopher/pathlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,19 +30,15 @@ packages:
 `
 
 func TestRemoteTemplates(t *testing.T) {
-	var err error
-
 	// the temp dir needs to reside within the mockery project because mockery
 	// requires a go.mod file to function correctly. Using t.TempDir() won't work
 	// because of this.
-	tmpDirBase := pathlib.NewPath("./test")
-	_ = tmpDirBase.RemoveAll()
-	require.NoError(t, tmpDirBase.Mkdir())
-	tmpDirBase, err = tmpDirBase.ResolveAll()
-	require.NoError(t, err)
+	tmpDirBase := "./test"
+	_ = os.RemoveAll(tmpDirBase)
+	require.NoError(t, os.Mkdir(tmpDirBase, 0o755))
 
 	//nolint:errcheck
-	defer tmpDirBase.RemoveAll()
+	defer os.RemoveAll(tmpDirBase)
 
 	type test struct {
 		name             string
@@ -92,11 +89,11 @@ func TestRemoteTemplates(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpdir := tmpDirBase.Join(t.Name())
-			require.NoError(t, tmpdir.MkdirAll())
+			tmpdir := path.Join(tmpDirBase, t.Name())
+			require.NoError(t, os.MkdirAll(tmpdir, 0o755))
 
-			configFile := tmpdir.Join(".mockery.yml")
-			outFile := tmpdir.Join("out.txt")
+			configFile := path.Join(tmpdir, ".mockery.yml")
+			outFile := path.Join(tmpdir, "out.txt")
 
 			templateName := "template.templ"
 			mux := http.NewServeMux()
@@ -112,23 +109,24 @@ func TestRemoteTemplates(t *testing.T) {
 
 			fullPath := fmt.Sprintf("%s/%s", ts.URL, templateName)
 
+			parent, name := path.Split(outFile)
 			configFileContents := fmt.Sprintf(
 				configTemplate,
-				outFile.Parent().String(),
-				outFile.Name(),
+				parent,
+				name,
 				fullPath,
 			)
-			require.NoError(t, configFile.WriteFile([]byte(configFileContents)))
+			require.NoError(t, os.WriteFile(configFile, []byte(configFileContents), 0o600))
 
 			//nolint: gosec
 			out, err := exec.Command(
 				"go", "run", "github.com/vektra/mockery/v3",
-				"--config", configFile.String()).CombinedOutput()
+				"--config", configFile).CombinedOutput()
 			if tt.expectMockeryErr {
 				assert.Error(t, err)
 			} else {
 				require.NoError(t, err, string(out))
-				outFileBytes, err := outFile.ReadFile()
+				outFileBytes, err := os.ReadFile(outFile)
 				require.NoError(t, err)
 				assert.Equal(t, "Hello, world!", string(outFileBytes))
 			}

@@ -10,12 +10,12 @@ import (
 	"go/format"
 	"go/token"
 	"go/types"
-	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/chigopher/pathlib"
 	"github.com/rs/zerolog"
 	"github.com/vektra/mockery/v3/config"
+	"github.com/vektra/mockery/v3/internal/file"
 	"github.com/vektra/mockery/v3/internal/stackerr"
 	"github.com/vektra/mockery/v3/template"
 	"github.com/xeipuuv/gojsonschema"
@@ -56,57 +56,27 @@ var jsonSchemas = map[string]string{
 
 // findPkgPath returns the fully-qualified go import path of a given dir. The
 // dir must be relative to a go.mod file. In the case it isn't, an error is returned.
-func findPkgPath(dirPath *pathlib.Path) (string, error) {
-	if err := dirPath.MkdirAll(); err != nil {
-		return "", stackerr.NewStackErr(err)
-	}
-	dir, err := dirPath.ResolveAll()
+func findPkgPath(dirPath string) (string, error) {
+	dirPath, err := file.CleanPath(dirPath)
 	if err != nil {
 		return "", stackerr.NewStackErr(err)
 	}
-	var goModFile *pathlib.Path
-	cursor := dir
-	for i := 0; ; i++ {
-		if i == 1000 {
-			return "", stackerr.NewStackErr(errors.New("failed to find go.mod after 1000 iterations"))
-		}
-		goMod := cursor.Join("go.mod")
-		goModExists, err := goMod.Exists()
-		if err != nil {
-			return "", stackerr.NewStackErr(err)
-		}
-		if !goModExists {
-			parent := cursor.Parent()
-			// Hit the root path
-			if cursor.String() == parent.String() {
-				return "", stackerr.NewStackErrf(
-					ErrGoModNotFound, "parsing package path for %s", dir.String())
-			}
-			cursor = parent
-			continue
-		}
-		goModFile = goMod
-		break
-	}
-	dirRelative, err := dir.RelativeTo(goModFile.Parent())
+	goModFile, content, err := file.FindInHierarchy(dirPath, []string{"go.mod"})
 	if err != nil {
 		return "", stackerr.NewStackErr(err)
 	}
-	fileBytes, err := goModFile.ReadFile()
+	dirRelative, err := filepath.Rel(filepath.FromSlash(filepath.Dir(goModFile)), filepath.FromSlash(dirPath))
 	if err != nil {
 		return "", stackerr.NewStackErr(err)
 	}
-	scanner := bufio.NewScanner(bytes.NewReader(fileBytes))
+	scanner := bufio.NewScanner(bytes.NewReader(content))
 	// Iterate over each line
 	for scanner.Scan() {
 		if !strings.HasPrefix(scanner.Text(), "module") {
 			continue
 		}
 		moduleName := strings.Split(scanner.Text(), "module ")[1]
-		return pathlib.NewPath(moduleName, pathlib.PathWithSeperator("/")).
-			JoinPath(dirRelative).
-			Clean().
-			String(), nil
+		return filepath.ToSlash(filepath.Clean(filepath.Join(moduleName, dirRelative))), nil
 	}
 	return "", stackerr.NewStackErr(ErrGoModInvalid)
 }
@@ -126,7 +96,7 @@ type TemplateGenerator struct {
 func NewTemplateGenerator(
 	ctx context.Context,
 	srcPkg *packages.Package,
-	outPkgFSPath *pathlib.Path,
+	outPkgFSPath string,
 	templateName string,
 	templateSchema string,
 	requireSchemaExists bool,
@@ -136,22 +106,29 @@ func NewTemplateGenerator(
 	pkgName string,
 ) (*TemplateGenerator, error) {
 	log := *zerolog.Ctx(ctx)
+	var err error
 
-	srcPkgFSPath := pathlib.NewPath(srcPkg.GoFiles[0]).Parent()
-	if !outPkgFSPath.IsAbsolute() {
-		cwd, err := os.Getwd()
+	srcPkgFSPath := filepath.Dir(srcPkg.GoFiles[0])
+	if !filepath.IsAbs(outPkgFSPath) {
+		outPkgFSPath, err = filepath.Abs(outPkgFSPath)
 		if err != nil {
-			log.Err(err).Msg("failed to get current working directory")
+			log.Err(err).Msg("failed to make absolute path")
 			return nil, stackerr.NewStackErr(err)
 		}
-		outPkgFSPath = pathlib.NewPath(cwd).JoinPath(outPkgFSPath)
 	}
-	srcPkgFSPath = srcPkgFSPath.Clean()
-	outPkgFSPath = outPkgFSPath.Clean()
+	if !filepath.IsAbs(srcPkgFSPath) {
+		srcPkgFSPath, err = filepath.Abs(srcPkgFSPath)
+		if err != nil {
+			log.Err(err).Msg("failed to make absolute path")
+			return nil, stackerr.NewStackErr(err)
+		}
+	}
+	srcPkgFSPath = filepath.ToSlash(filepath.Clean(srcPkgFSPath))
+	outPkgFSPath = filepath.ToSlash(filepath.Clean(outPkgFSPath))
 
 	newLogger := zerolog.Ctx(ctx).With().
-		Stringer("srcPkgFSPath", srcPkgFSPath).
-		Stringer("outPkgFSPath", outPkgFSPath).
+		Str("srcPkgFSPath", srcPkgFSPath).
+		Str("outPkgFSPath", outPkgFSPath).
 		Str("src-pkg-name", srcPkg.Name).
 		Str("out-pkg-name", pkgName).
 		Logger()
@@ -168,7 +145,7 @@ func NewTemplateGenerator(
 	// Note: Technically, go allows test files to have a different package name
 	// than non-test files. In this case, the test files have to import the source
 	// package just as if it were in a different directory.
-	if pkgName == srcPkg.Name && srcPkgFSPath.Equals(outPkgFSPath) {
+	if pkgName == srcPkg.Name && srcPkgFSPath == outPkgFSPath {
 		log.Debug().Msg("output package detected to be in-package of original package")
 		inPackage = true
 	} else {

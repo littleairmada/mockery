@@ -58,9 +58,9 @@ var FuncMap = template.FuncMap{
 	"quoteMeta":   regexp.QuoteMeta,
 
 	// Filepath manipulation
-	"base":     filepath.Base,
-	"clean":    filepath.Clean,
-	"dir":      filepath.Dir,
+	"base":     func(path string) string { return filepath.ToSlash(filepath.Base(path)) },
+	"clean":    func(path string) string { return filepath.ToSlash(filepath.Clean(path)) },
+	"dir":      func(path string) string { return filepath.ToSlash(filepath.Dir(path)) },
 	"readFile": ReadFile,
 
 	// Basic access to reading environment variables

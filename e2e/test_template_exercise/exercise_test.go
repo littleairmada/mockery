@@ -6,16 +6,15 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/chigopher/pathlib"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestExercise(t *testing.T) {
 	t.Parallel()
 
-	outfile := pathlib.NewPath("./exercise.txt")
+	outfile := "./exercise.txt"
 	//nolint:errcheck
-	defer outfile.Remove()
+	defer os.Remove(outfile)
 
 	out, err := exec.Command(
 		"go", "run", "github.com/vektra/mockery/v3",
@@ -26,13 +25,13 @@ func TestExercise(t *testing.T) {
 		os.Exit(1)
 	}
 
-	b, err := outfile.ReadFile()
+	b, err := os.ReadFile(outfile)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	expectedPath := pathlib.NewPath("exercise_expected.txt")
-	expected, err := expectedPath.ReadFile()
+	expectedPath := "exercise_expected.txt"
+	expected, err := os.ReadFile(expectedPath)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
