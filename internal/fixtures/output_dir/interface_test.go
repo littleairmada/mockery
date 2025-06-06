@@ -1,10 +1,10 @@
 package output_dir_test
 
 import (
+	"os"
 	"strings"
 	"testing"
 
-	"github.com/chigopher/pathlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,8 +35,7 @@ func TestOutputSourceImport(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockFile := pathlib.NewPath(tt.filepath)
-			b, err := mockFile.ReadFile()
+			b, err := os.ReadFile(tt.filepath)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, strings.Contains(string(b), expectedImport))
 		})
@@ -67,8 +66,7 @@ func TestOutputEnsureCheck(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockFile := pathlib.NewPath(tt.filepath)
-			b, err := mockFile.ReadFile()
+			b, err := os.ReadFile(tt.filepath)
 			require.NoError(t, err)
 			assert.Contains(t, string(b), tt.expected)
 		})
