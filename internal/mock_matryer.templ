@@ -12,21 +12,30 @@
 package {{.PkgName}}
 
 {{- if .Interfaces.ImplementsSomeMethod }}
-    {{- $_ := .Registry.AddImport "sync" "sync" }}
+	{{- $_ := .Registry.AddImport "sync" "sync" }}
+{{- end }}
+
+{{$srcPkgQualifier := $.SrcPkgQualifier}}
+{{- if not (index .TemplateData "skip-ensure") }}
+	{{- $_ := $.Registry.AddImport $.Registry.SrcPkgName $.Registry.SrcPkg.PkgPath }}
 {{- end }}
 
 import (
 {{- range .Imports}}
 	{{ .ImportStatement }}
+
+	{{- if eq .Path $.Registry.SrcPkg.PkgPath  }}
+		{{- $srcPkgQualifier = (printf "%s." .Qualifier) }}
+	{{- end }}
 {{- end}}
 )
 
 {{range $i, $mock := .Interfaces -}}
 
 {{- if not (index $mock.TemplateData "skip-ensure") -}}
-// Ensure that {{.StructName}} does implement {{$.SrcPkgQualifier}}{{.Name}}.
+// Ensure that {{.StructName}} does implement {{$srcPkgQualifier}}{{.Name}}.
 // If this is not the case, regenerate this file with mockery.
-var _ {{$.SrcPkgQualifier}}{{.Name -}}
+var _ {{$srcPkgQualifier}}{{.Name -}}
 	{{- if .TypeParams }}[
 		{{- range $index, $param := .TypeParams}}
 			{{- if $index}}, {{end -}}
@@ -44,11 +53,11 @@ var _ {{$.SrcPkgQualifier}}{{.Name -}}
 {}
 {{- end}}
 
-// {{.StructName}} is a mock implementation of {{$.SrcPkgQualifier}}{{.Name}}.
+// {{.StructName}} is a mock implementation of {{$srcPkgQualifier}}{{.Name}}.
 //
 //	func TestSomethingThatUses{{.Name}}(t *testing.T) {
 //
-//		// make and configure a mocked {{$.SrcPkgQualifier}}{{.Name}}
+//		// make and configure a mocked {{$srcPkgQualifier}}{{.Name}}
 //		mocked{{.Name}} := &{{.StructName}}{
 			{{- range .Methods}}
 //			{{.Name}}Func: func({{.ArgList}}) {{.ReturnArgTypeList}} {
@@ -57,7 +66,7 @@ var _ {{$.SrcPkgQualifier}}{{.Name -}}
 			{{- end}}
 //		}
 //
-//		// use mocked{{.Name}} in code that requires {{$.SrcPkgQualifier}}{{.Name}}
+//		// use mocked{{.Name}} in code that requires {{$srcPkgQualifier}}{{.Name}}
 //		// and then make assertions.
 //
 //	}
