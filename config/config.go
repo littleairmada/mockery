@@ -197,10 +197,9 @@ func NewRootConfig(
 	}
 
 	// Second argument is nil because of a weird bug: https://github.com/knadh/koanf/issues/307
-	if err := k.UnmarshalWithConf("", nil, koanf.UnmarshalConf{
+	if err := k.UnmarshalWithConf("", &rootConfig, koanf.UnmarshalConf{
 		DecoderConfig: &mapstructure.DecoderConfig{
 			ErrorUnused: true,
-			Result:      &rootConfig,
 		},
 	}); err != nil {
 		return nil, k, fmt.Errorf("unmarshalling config: %w", err)
