@@ -60,39 +60,7 @@ jobs:
   release:
     needs: tag
     if: needs.tag.outputs.tag_result == 0
-    runs-on: ubuntu-latest
-    env:
-      DOCKER_CLI_EXPERIMENTAL: "enabled"
-
-    steps:
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 'stable'
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: GoReleaser
-        uses: goreleaser/goreleaser-action@v2.7.0
-        with:
-          args: release --clean
-          version: "<2"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GORELEASER_GITHUB_TOKEN }}
-          HOMEBREW_TAP_TOKEN: ${{ secrets.GORELEASER_HOMEBREW_TAP_TOKEN }}
-          GORELEASER_CURRENT_TAG: ${{ needs.tag.outputs.requested_version }}
-          #GORELEASER_PREVIOUS_TAG: ${{ needs.tag.outputs.previous_version }}
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
+    with:
+      ref: ${{ github.ref_name }}
