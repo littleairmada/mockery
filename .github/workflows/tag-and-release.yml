@@ -63,4 +63,4 @@ jobs:
     uses: ./.github/workflows/release.yml
     secrets: inherit
     with:
-      ref: ${{ github.ref_name }}
+      tag: ${{ github.ref_name }}
