@@ -13,10 +13,12 @@ on:
     secrets:
         DOCKER_USERNAME:
           required: true
-          type: string
         DOCKER_PASSWORD:
           required: true
-          type: string
+        GORELEASER_GITHUB_TOKEN:
+          required: true
+        GORELEASER_HOMEBREW_TAP_TOKEN:
+          required: true
 
 permissions:
   contents: write
