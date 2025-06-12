@@ -63,4 +63,4 @@ jobs:
     uses: ./.github/workflows/release.yml
     secrets: inherit
     with:
-      tag: ${{ github.ref_name }}
+      tag: ${{ needs.tag.outputs.requested_version }}
