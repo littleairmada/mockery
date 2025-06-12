@@ -2,14 +2,18 @@ name: "release"
 
 on:
   workflow_dispatch:
-    inputs: &inputs
+    inputs:
       tag:
         description: "Tag to release"
         type: string
         required: true
 
   workflow_call:
-    inputs: *inputs
+    inputs:
+      tag:
+        description: "Tag to release"
+        type: string
+        required: true
     secrets:
         DOCKER_USERNAME:
           required: true
