@@ -45,7 +45,8 @@ func (nv *NodeVisitor) Visit(node ast.Node) ast.Visitor {
 			Logger()
 
 		switch n.Type.(type) {
-		case *ast.InterfaceType, *ast.IndexExpr, *ast.IndexListExpr:
+		case *ast.InterfaceType, *ast.IndexExpr, *ast.IndexListExpr, *ast.SelectorExpr, *ast.Ident:
+			log.Debug().Msg("found node with acceptable type for mocking.")
 			nv.declaredInterfaces = append(nv.declaredInterfaces, declaredInterface{
 				typeSpec: n,
 				genDecl:  nv.lastSeenGenDecl,
