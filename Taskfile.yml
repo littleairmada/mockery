@@ -54,18 +54,20 @@ tasks:
     cmds:
       - go run .
 
-  mocks.generate.mockery:
+  mocks.generate.testify:
+    desc: Generate testify mocks
     cmds:
       - MOCKERY_CONFIG=./.mockery_testify.yml go run .
 
   mocks.generate.matryer:
+    desc: Generate matryer mocks
     cmds:
       - MOCKERY_CONFIG=./.mockery_matryer.yml go run .
 
   mocks.generate:
     desc: generate mocks
     deps:
-      - mocks.generate.mockery
+      - mocks.generate.testify
       - mocks.generate.matryer
 
   docker:

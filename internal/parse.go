@@ -96,22 +96,34 @@ func (p *Parser) ParsePackages(ctx context.Context, packageNames []string) ([]*I
 					continue
 				}
 
-				typ, ok := obj.Type().(*types.Named)
+				var typ *types.Named
+				var name string
+				ttyp := obj.Type()
+
+				if talias, ok := obj.Type().(*types.Alias); ok {
+					name = talias.Obj().Name()
+					ttyp = types.Unalias(obj.Type())
+				}
+
+				typ, ok := ttyp.(*types.Named)
 				if !ok {
 					ifaceLog.Debug().Msg("interface is not named, skipping")
 					continue
 				}
 
-				if !types.IsInterface(obj.Type()) {
-					ifaceLog.Debug().Msg("type is not an interface, skipping")
-					continue
+				if name == "" {
+					name = typ.Obj().Name()
 				}
-
-				name := typ.Obj().Name()
 
 				if typ.Obj().Pkg() == nil {
 					continue
 				}
+
+				if !types.IsInterface(typ.Underlying()) {
+					ifaceLog.Debug().Msg("type is not an interface, skipping")
+					continue
+				}
+
 				interfaces = append(interfaces, NewInterface(
 					name,
 					declaredInterface.typeSpec,

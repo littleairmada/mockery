@@ -7,9 +7,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vektra/mockery/v3/internal/fixtures/type_alias"
 )
 
-func TestTypeAlias(t *testing.T) {
+func TestTypeAliasInMethodReturn(t *testing.T) {
 	for _, tt := range []struct {
 		name          string
 		filepath      string
@@ -30,4 +31,10 @@ func TestTypeAlias(t *testing.T) {
 			assert.True(t, regex.Match(bytes), "expected regex was not found in file")
 		})
 	}
+}
+
+func TestTypeAliasMock(t *testing.T) {
+	m := type_alias.NewMockAliasToInterface3(t)
+	m.EXPECT().Foo().Return("foo")
+	assert.Equal(t, "foo", m.Foo())
 }
