@@ -104,6 +104,7 @@ func NewTemplateGenerator(
 	formatter Formatter,
 	pkgConfig *config.Config,
 	pkgName string,
+	forceInPackage *bool,
 ) (*TemplateGenerator, error) {
 	log := *zerolog.Ctx(ctx)
 	var err error
@@ -142,14 +143,19 @@ func NewTemplateGenerator(
 	log = log.With().Str("outPkgPath", outPkgPath).Logger()
 
 	var inPackage bool
-	// Note: Technically, go allows test files to have a different package name
-	// than non-test files. In this case, the test files have to import the source
-	// package just as if it were in a different directory.
-	if pkgName == srcPkg.Name && srcPkgFSPath == outPkgFSPath {
-		log.Debug().Msg("output package detected to be in-package of original package")
-		inPackage = true
+	if forceInPackage != nil {
+		log.Debug().Bool("inpackage", *forceInPackage).Msg("inpackage value provided, forcing to value")
+		inPackage = *forceInPackage
 	} else {
-		log.Debug().Msg("output package detected to not be in-package of original package")
+		// Note: Technically, go allows test files to have a different package name
+		// than non-test files. In this case, the test files have to import the source
+		// package just as if it were in a different directory.
+		if pkgName == srcPkg.Name && srcPkgFSPath == outPkgFSPath {
+			log.Debug().Msg("output package detected to be in-package of original package")
+			inPackage = true
+		} else {
+			log.Debug().Msg("output package detected to not be in-package of original package")
+		}
 	}
 
 	reg, err := template.NewRegistry(srcPkg, outPkgPath, inPackage)
@@ -234,6 +240,10 @@ func (g *TemplateGenerator) methodData(ctx context.Context, method *types.Func, 
 	for j := 0; j < signature.Results().Len(); j++ {
 		param := signature.Results().At(j)
 
+		paramLog := log.With().Str("param-string", param.String()).Logger()
+		paramCtx := paramLog.WithContext(ctx)
+		paramLog.Debug().Msg("found return")
+
 		var paramPkgPath string
 		var paramObjName string
 		switch t := param.Type().(type) {
@@ -252,7 +262,7 @@ func (g *TemplateGenerator) methodData(ctx context.Context, method *types.Func, 
 		}
 
 		replacement := ifaceConfig.GetReplacement(paramPkgPath, paramObjName)
-		v, err := methodScope.AddVar(ctx, param, "", replacement)
+		v, err := methodScope.AddVar(paramCtx, param, "", replacement)
 		if err != nil {
 			return template.Method{}, err
 		}

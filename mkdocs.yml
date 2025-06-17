@@ -69,6 +69,7 @@ nav:
     - template/matryer.md
   - Features:
     - replace-type.md
+    - inpackage.md
   - Notes:
     - faq.md
     - v3.md

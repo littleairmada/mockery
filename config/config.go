@@ -119,6 +119,10 @@ func NewRootConfig(
 		field.Set(reflect.New(field.Type().Elem()))
 	}
 
+	// There are some special cases where the default value of pointers
+	// should be set to nil.
+	conf.InPackage = nil
+
 	k, err := NewDefaultKoanf(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -264,6 +268,8 @@ func mergeConfigs(ctx context.Context, src Config, dest *Config) {
 			}
 			destMap = destFieldValue.Interface().(map[string]any)
 			mergeStringMaps(srcMap, destMap)
+		} else if srcFieldValue.Kind() == reflect.Pointer && srcFieldValue.IsNil() {
+			// Do nothing, the src field is nil
 		} else if srcFieldValue.Kind() == reflect.Pointer && destFieldValue.IsNil() {
 			// Attribute is a pointer. We need to allocate a new value of the
 			// same type as the type being pointed to.
@@ -520,6 +526,7 @@ type Config struct {
 	ForceFileWrite        *bool   `koanf:"force-file-write" yaml:"force-file-write,omitempty"`
 	Formatter             *string `koanf:"formatter" yaml:"formatter,omitempty"`
 	IncludeInterfaceRegex *string `koanf:"include-interface-regex" yaml:"include-interface-regex,omitempty"`
+	InPackage             *bool   `koanf:"inpackage" yaml:"inpackage,omitempty"`
 	LogLevel              *string `koanf:"log-level" yaml:"log-level,omitempty"`
 	StructName            *string `koanf:"structname" yaml:"structname,omitempty"`
 	PkgName               *string `koanf:"pkgname" yaml:"pkgname,omitempty"`

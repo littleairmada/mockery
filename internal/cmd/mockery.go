@@ -90,21 +90,28 @@ func GetRootApp(ctx context.Context, flags *pflag.FlagSet) (*RootApp, error) {
 	return r, nil
 }
 
+// CollectionConfig contains the common, file-global configuration
+// parameters for an InterfaceCollection. Some mockery config parameters
+// are attributes of the entire file, rather than specific interfaces.
+// For such attributes, we must assert that all interfaces within
+// a collection have these values identically set.
+type CollectionConfig struct {
+	InPackage      *bool
+	OutFilePath    string
+	OutPkgName     string
+	SrcPkgPath     string
+	Template       string
+	TemplateSchema string
+}
+
 // InterfaceCollection maintains a list of *pkg.Interface and asserts that all
 // the interfaces in the collection belong to the same source package. It also
 // asserts that various properties of the interfaces added to the collection are
 // uniform.
 type InterfaceCollection struct {
-	// Mockery needs to assert that certain properties of the added interfaces
-	// are uniform for all members of the collection. This includes things like
-	// 1. Package name of the output mock file
-	// 2. Source package path (only one package per output file is allowed)
-	srcPkgPath  string
-	outFilePath string
-	srcPkg      *packages.Package
-	outPkgName  string
-	interfaces  []*internal.Interface
-	template    string
+	srcPkg     *packages.Package
+	interfaces []*internal.Interface
+	config     CollectionConfig
 }
 
 func NewInterfaceCollection(
@@ -112,26 +119,33 @@ func NewInterfaceCollection(
 	outFilePath string,
 	srcPkg *packages.Package,
 	outPkgName string,
-	templ string,
+	template string,
+	templateSchema string,
+	inPackage *bool,
 ) *InterfaceCollection {
+	config := CollectionConfig{
+		InPackage:      inPackage,
+		SrcPkgPath:     srcPkgPath,
+		OutFilePath:    outFilePath,
+		OutPkgName:     outPkgName,
+		Template:       template,
+		TemplateSchema: templateSchema,
+	}
 	return &InterfaceCollection{
-		srcPkgPath:  srcPkgPath,
-		outFilePath: outFilePath,
-		srcPkg:      srcPkg,
-		outPkgName:  outPkgName,
-		interfaces:  make([]*internal.Interface, 0),
-		template:    templ,
+		srcPkg:     srcPkg,
+		interfaces: make([]*internal.Interface, 0),
+		config:     config,
 	}
 }
 
 func (i *InterfaceCollection) Append(ctx context.Context, iface *internal.Interface) error {
-	collectionFilepath := i.outFilePath
+	collectionFilepath := i.config.OutFilePath
 	interfaceFilepath := iface.Config.FilePath()
 	log := zerolog.Ctx(ctx).With().
 		Str(logging.LogKeyInterface, iface.Name).
-		Str("collection-pkgname", i.outPkgName).
+		Str("collection-pkgname", i.config.OutPkgName).
 		Str("interface-pkgname", *iface.Config.PkgName).
-		Str("collection-pkgpath", i.srcPkgPath).
+		Str("collection-pkgpath", i.config.SrcPkgPath).
 		Str("interface-pkgpath", iface.Pkg.PkgPath).
 		Str("collection-filepath", collectionFilepath).
 		Str("interface-filepath", interfaceFilepath).
@@ -142,19 +156,19 @@ func (i *InterfaceCollection) Append(ctx context.Context, iface *internal.Interf
 		log.Error().Msg(msg)
 		return errors.New(msg)
 	}
-	if i.outPkgName != *iface.Config.PkgName {
+	if i.config.OutPkgName != *iface.Config.PkgName {
 		msg := "all mocks in an output file must have the same pkgname"
 		log.Error().Str("interface-pkgname", *iface.Config.PkgName).Msg(msg)
 		return errors.New(msg)
 	}
-	if i.srcPkgPath != iface.Pkg.PkgPath {
+	if i.config.SrcPkgPath != iface.Pkg.PkgPath {
 		msg := "all mocks in an output file must come from the same source package"
 		log.Error().Msg(msg)
 		return errors.New(msg)
 	}
-	if i.template != *iface.Config.Template {
+	if i.config.Template != *iface.Config.Template {
 		msg := "all mocks in an output file must use the same template"
-		log.Error().Str("expected-template", i.template).Str("interface-template", *iface.Config.Template).Msg(msg)
+		log.Error().Str("expected-template", i.config.Template).Str("interface-template", *iface.Config.Template).Msg(msg)
 		return errors.New(msg)
 	}
 	i.interfaces = append(i.interfaces, iface)
@@ -273,12 +287,19 @@ func (r *RootApp) Run() error {
 
 			_, ok := mockFileToInterfaces[filePath]
 			if !ok {
+				logctx := ifaceLog.Debug().Str("inpackage", fmt.Sprintf("%v", ifaceConfig.InPackage))
+				if ifaceConfig.InPackage != nil {
+					logctx = logctx.Bool("inpackage-value", *ifaceConfig.InPackage)
+				}
+				logctx.Msg("ADDING INTERFACE COLLECTION")
 				mockFileToInterfaces[filePath] = NewInterfaceCollection(
 					iface.Pkg.PkgPath,
 					filePath,
 					iface.Pkg,
 					*ifaceConfig.PkgName,
 					*ifaceConfig.Template,
+					*ifaceConfig.TemplateSchema,
+					ifaceConfig.InPackage,
 				)
 				log.Debug().Str("file-path", filePath).Msg("creating new interface collection")
 			}
@@ -304,7 +325,7 @@ func (r *RootApp) Run() error {
 
 		fileLog.Debug().Int("interfaces-in-file-len", len(interfacesInFile.interfaces)).Msgf("%v", interfacesInFile)
 
-		packageConfig, err := r.Config.GetPackageConfig(fileCtx, interfacesInFile.srcPkgPath)
+		packageConfig, err := r.Config.GetPackageConfig(fileCtx, interfacesInFile.config.SrcPkgPath)
 		if err != nil {
 			return err
 		}
@@ -312,7 +333,7 @@ func (r *RootApp) Run() error {
 			return err
 		}
 
-		interfacesInFileDir := filepath.ToSlash(filepath.Dir(interfacesInFile.outFilePath))
+		interfacesInFileDir := filepath.ToSlash(filepath.Dir(interfacesInFile.config.OutFilePath))
 		generator, err := pkg.NewTemplateGenerator(
 			fileCtx,
 			interfacesInFile.srcPkg,
@@ -323,7 +344,8 @@ func (r *RootApp) Run() error {
 			remoteTemplateCache,
 			pkg.Formatter(*r.Config.Formatter),
 			packageConfig.Config,
-			interfacesInFile.outPkgName,
+			interfacesInFile.config.OutPkgName,
+			interfacesInFile.config.InPackage,
 		)
 		if err != nil {
 			return err

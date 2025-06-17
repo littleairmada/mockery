@@ -96,3 +96,7 @@ packages:
       filename: mocks_net_http_test.go
     interfaces:
       ResponseWriter:
+  github.com/vektra/mockery/v3/internal/fixtures/inpackage:
+    config:
+      dir: "{{.InterfaceDirRelative}}/subpkg"
+      inpackage: true
