@@ -14,6 +14,7 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/vektra/mockery/v3/config"
+	"github.com/vektra/mockery/v3/internal/logging"
 	"github.com/vektra/mockery/v3/internal/stackerr"
 	"golang.org/x/tools/go/packages"
 )
@@ -84,7 +85,7 @@ func (p *Parser) ParsePackages(ctx context.Context, packageNames []string) ([]*I
 					return nil, fmt.Errorf("determining if file is auto-generated: %w", err)
 				}
 				if isGenerated {
-					fileLog.Debug().Msg("file is auto-generated, skipping.")
+					fileLog.Debug().Str("docs-url", logging.DocsURL("/include-auto-generated")).Msg("file is auto-generated, skipping.")
 					continue
 				}
 			}

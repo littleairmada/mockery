@@ -68,8 +68,9 @@ nav:
     - template/testify.md
     - template/matryer.md
   - Features:
-    - replace-type.md
+    - include-auto-generated.md
     - inpackage.md
+    - replace-type.md
   - Notes:
     - faq.md
     - v3.md
