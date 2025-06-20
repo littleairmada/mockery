@@ -2,6 +2,8 @@
 title: replace-type
 ---
 
+:octicons-tag-24: v3.0.0
+
 The `#!yaml replace-type:` parameter allows you to replace a type in the generated mocks with another type. Take for example the following interface:
 
 ```go title="interface.go"

@@ -2,6 +2,8 @@
 title: inpackage
 ---
 
+:octicons-tag-24: v3.5.0
+
 The `#!yaml inpackage` parameter overrides mockery's auto-detection logic that determines whether an output file resides inside or outside of the package of the original interface. Normally, import statements and type qualifiers (such as `srcpkg.TypeName`, the qualified variant of `TypeName`) are added when the mock references types in the original package _and_ the mock resides outside of that package. For example:
 
 ```go

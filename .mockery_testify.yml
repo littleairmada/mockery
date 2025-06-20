@@ -105,3 +105,7 @@ packages:
         # mock file is going to be invalid due to the inpackage: true 
         # config.
         mock-build-tags: nobuild
+  github.com/vektra/mockery/v3/internal/fixtures/include_auto_generated:
+    config:
+      include-auto-generated: true
+
