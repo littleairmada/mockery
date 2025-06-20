@@ -111,17 +111,21 @@ func (r *Registry) AddImport(pkgName string, pkgPath string) *Package {
 
 func (r *Registry) addImport(ctx context.Context, pkg TypesPackage) *Package {
 	path := pkg.Path()
-	log := zerolog.Ctx(ctx).With().
+	logContext := zerolog.Ctx(ctx).With().
 		Str("method", "AddImport").
-		Str("src-pkg-path", path).
 		Str("dst-pkg-path", r.dstPkgPath).
-		Logger()
-	log.Debug().Msg("adding import")
-	if path == r.dstPkgPath && r.inPackage {
-		log.Debug().Msg("path equals dst-pkg-path, not adding import")
+		Str("pkg-path", path).
+		Bool("inpackage", r.inPackage)
+	if r.srcPkg != nil {
+		logContext = logContext.Str("src-pkg-path", r.srcPkg.PkgPath)
+	}
+	log := logContext.Logger()
+
+	if r.srcPkg != nil && path == r.srcPkg.PkgPath && r.inPackage {
+		log.Debug().Msg("package path equals src-pkg-path, not adding import")
 		return nil
 	} else {
-		log.Debug().Msg("path does not equal dst-pkg-path, adding import")
+		log.Debug().Msg("package path does not equal src-pkg-path, adding import")
 	}
 
 	if imprt, ok := r.imports[path]; ok {

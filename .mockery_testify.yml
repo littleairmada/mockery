@@ -96,3 +96,12 @@ packages:
       filename: mocks_net_http_test.go
     interfaces:
       ResponseWriter:
+  github.com/vektra/mockery/v3/internal/fixtures/inpackage:
+    config:
+      dir: "{{.InterfaceDirRelative}}/subpkg"
+      inpackage: true
+      template-data:
+        # Set a build tag that won't be picked up by tests. The generated
+        # mock file is going to be invalid due to the inpackage: true 
+        # config.
+        mock-build-tags: nobuild
