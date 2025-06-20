@@ -200,7 +200,7 @@ func (r *RootApp) Run() error {
 		log.Error().Msg("no packages specified in config")
 		return fmt.Errorf("no packages specified in config")
 	}
-	parser := pkg.NewParser(buildTags)
+	parser := pkg.NewParser(buildTags, r.Config)
 
 	// Let's build a missing map here to keep track of seen interfaces.
 	// (pkg -> list of interface names)

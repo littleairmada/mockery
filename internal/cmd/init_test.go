@@ -14,6 +14,7 @@ dir: '{{.InterfaceDir}}'
 filename: mocks_test.go
 force-file-write: true
 formatter: goimports
+include-auto-generated: false
 log-level: info
 structname: '{{.Mock}}{{.InterfaceName}}'
 pkgname: '{{.SrcPackageName}}'
