@@ -3,11 +3,12 @@
 // template: testify
 // TEST MOCKERY BOILERPLATE
 
+//go:build nobuild
+
 package inpackage
 
 import (
 	mock "github.com/stretchr/testify/mock"
-	"github.com/vektra/mockery/v3/internal/fixtures/inpackage"
 )
 
 // NewMockFoo creates a new instance of MockFoo. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -38,18 +39,18 @@ func (_m *MockFoo) EXPECT() *MockFoo_Expecter {
 }
 
 // Bar provides a mock function for the type MockFoo
-func (_mock *MockFoo) Bar() inpackage.InternalStringType {
+func (_mock *MockFoo) Bar() InternalStringType {
 	ret := _mock.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for Bar")
 	}
 
-	var r0 inpackage.InternalStringType
-	if returnFunc, ok := ret.Get(0).(func() inpackage.InternalStringType); ok {
+	var r0 InternalStringType
+	if returnFunc, ok := ret.Get(0).(func() InternalStringType); ok {
 		r0 = returnFunc()
 	} else {
-		r0 = ret.Get(0).(inpackage.InternalStringType)
+		r0 = ret.Get(0).(InternalStringType)
 	}
 	return r0
 }
@@ -71,12 +72,12 @@ func (_c *MockFoo_Bar_Call) Run(run func()) *MockFoo_Bar_Call {
 	return _c
 }
 
-func (_c *MockFoo_Bar_Call) Return(internalStringType inpackage.InternalStringType) *MockFoo_Bar_Call {
+func (_c *MockFoo_Bar_Call) Return(internalStringType InternalStringType) *MockFoo_Bar_Call {
 	_c.Call.Return(internalStringType)
 	return _c
 }
 
-func (_c *MockFoo_Bar_Call) RunAndReturn(run func() inpackage.InternalStringType) *MockFoo_Bar_Call {
+func (_c *MockFoo_Bar_Call) RunAndReturn(run func() InternalStringType) *MockFoo_Bar_Call {
 	_c.Call.Return(run)
 	return _c
 }

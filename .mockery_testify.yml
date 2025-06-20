@@ -100,3 +100,8 @@ packages:
     config:
       dir: "{{.InterfaceDirRelative}}/subpkg"
       inpackage: true
+      template-data:
+        # Set a build tag that won't be picked up by tests. The generated
+        # mock file is going to be invalid due to the inpackage: true 
+        # config.
+        mock-build-tags: nobuild
