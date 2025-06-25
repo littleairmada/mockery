@@ -109,6 +109,8 @@ packages:
     config:
       include-auto-generated: true
   github.com/vektra/mockery/v3/internal/fixtures/multi_template:
+    config:
+      template: testify
     interfaces:
       Foo:
         configs:

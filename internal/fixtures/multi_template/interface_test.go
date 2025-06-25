@@ -9,12 +9,12 @@ import (
 func TestFoo(t *testing.T) {
 	testifyMock := NewMockTestifyFoo(t)
 	testifyMock.EXPECT().Bar().Return("bar")
-	assert.Equal(t, "foo", testifyMock.Bar())
+	assert.Equal(t, "bar", testifyMock.Bar())
 
 	matryerMock := MockMatryerFoo{
 		BarFunc: func() string {
-			return "foo"
+			return "bar"
 		},
 	}
-	assert.Equal(t, "foo", matryerMock.Bar())
+	assert.Equal(t, "bar", matryerMock.Bar())
 }
