@@ -96,12 +96,13 @@ func GetRootApp(ctx context.Context, flags *pflag.FlagSet) (*RootApp, error) {
 // For such attributes, we must assert that all interfaces within
 // a collection have these values identically set.
 type CollectionConfig struct {
-	InPackage      *bool
-	OutFilePath    string
-	OutPkgName     string
-	SrcPkgPath     string
-	Template       string
-	TemplateSchema string
+	InPackage                   *bool
+	OutFilePath                 string
+	OutPkgName                  string
+	SrcPkgPath                  string
+	Template                    string
+	TemplateSchema              string
+	RequireTemplateSchemaExists bool
 }
 
 // InterfaceCollection maintains a list of *pkg.Interface and asserts that all
@@ -122,14 +123,16 @@ func NewInterfaceCollection(
 	template string,
 	templateSchema string,
 	inPackage *bool,
+	requireTemplateSchemaExists bool,
 ) *InterfaceCollection {
 	config := CollectionConfig{
-		InPackage:      inPackage,
-		SrcPkgPath:     srcPkgPath,
-		OutFilePath:    outFilePath,
-		OutPkgName:     outPkgName,
-		Template:       template,
-		TemplateSchema: templateSchema,
+		InPackage:                   inPackage,
+		SrcPkgPath:                  srcPkgPath,
+		OutFilePath:                 outFilePath,
+		OutPkgName:                  outPkgName,
+		Template:                    template,
+		TemplateSchema:              templateSchema,
+		RequireTemplateSchemaExists: requireTemplateSchemaExists,
 	}
 	return &InterfaceCollection{
 		srcPkg:     srcPkg,
@@ -300,6 +303,7 @@ func (r *RootApp) Run() error {
 					*ifaceConfig.Template,
 					*ifaceConfig.TemplateSchema,
 					ifaceConfig.InPackage,
+					*ifaceConfig.RequireTemplateSchemaExists,
 				)
 				log.Debug().Str("file-path", filePath).Msg("creating new interface collection")
 			}
@@ -319,39 +323,39 @@ func (r *RootApp) Run() error {
 		}
 	}
 
-	for outFilePath, interfacesInFile := range mockFileToInterfaces {
+	for outFilePath, collection := range mockFileToInterfaces {
 		fileLog := log.With().Str("file", outFilePath).Logger()
 		fileCtx := fileLog.WithContext(ctx)
 
-		fileLog.Debug().Int("interfaces-in-file-len", len(interfacesInFile.interfaces)).Msgf("%v", interfacesInFile)
+		fileLog.Debug().Int("interfaces-in-file-len", len(collection.interfaces)).Msgf("%v", collection)
 
-		packageConfig, err := r.Config.GetPackageConfig(fileCtx, interfacesInFile.config.SrcPkgPath)
+		packageConfig, err := r.Config.GetPackageConfig(fileCtx, collection.config.SrcPkgPath)
 		if err != nil {
 			return err
 		}
-		if err := packageConfig.Config.ParseTemplates(ctx, "", "", interfacesInFile.srcPkg); err != nil {
+		if err := packageConfig.Config.ParseTemplates(ctx, "", "", collection.srcPkg); err != nil {
 			return err
 		}
 
-		interfacesInFileDir := filepath.ToSlash(filepath.Dir(interfacesInFile.config.OutFilePath))
+		interfacesInFileDir := filepath.ToSlash(filepath.Dir(collection.config.OutFilePath))
 		generator, err := pkg.NewTemplateGenerator(
 			fileCtx,
-			interfacesInFile.srcPkg,
+			collection.srcPkg,
 			interfacesInFileDir,
-			*packageConfig.Config.Template,
-			*packageConfig.Config.TemplateSchema,
-			*packageConfig.Config.RequireTemplateSchemaExists,
+			collection.config.Template,
+			collection.config.TemplateSchema,
+			collection.config.RequireTemplateSchemaExists,
 			remoteTemplateCache,
 			pkg.Formatter(*r.Config.Formatter),
 			packageConfig.Config,
-			interfacesInFile.config.OutPkgName,
-			interfacesInFile.config.InPackage,
+			collection.config.OutPkgName,
+			collection.config.InPackage,
 		)
 		if err != nil {
 			return err
 		}
 		fileLog.Info().Msg("Executing template")
-		templateBytes, err := generator.Generate(fileCtx, interfacesInFile.interfaces)
+		templateBytes, err := generator.Generate(fileCtx, collection.interfaces)
 		if err != nil {
 			return err
 		}

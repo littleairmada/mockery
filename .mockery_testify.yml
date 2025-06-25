@@ -7,7 +7,7 @@ all: True
 dir: "{{.InterfaceDirRelative}}"
 structname: "{{.Mock}}{{.InterfaceName}}"
 pkgname: "{{.SrcPackageName}}"
-filename: "mocks_testify_{{.SrcPackageName}}_test.go"
+filename: "mocks_{{.Template}}_{{.SrcPackageName}}_test.go"
 template-data:
   boilerplate-file: "./.boilerplate.txt"
 packages:
@@ -108,4 +108,13 @@ packages:
   github.com/vektra/mockery/v3/internal/fixtures/include_auto_generated:
     config:
       include-auto-generated: true
-
+  github.com/vektra/mockery/v3/internal/fixtures/multi_template:
+    config:
+      template: testify
+    interfaces:
+      Foo:
+        configs:
+          - structname: MockTestifyFoo
+            template: testify
+          - structname: MockMatryerFoo
+            template: matryer

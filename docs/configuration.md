@@ -147,7 +147,7 @@ Parameters marked as being templated have access to a number of template variabl
 
 ### Variables
 
-The variables provided are specified in the [`config.Data`](https://pkg.go.dev/github.com/vektra/mockery/v3/config#Data) struct.
+The variables provided are specified in the [`config.TemplateData`](https://pkg.go.dev/github.com/vektra/mockery/v3/config#TemplateData) struct.
 
 ### Functions
 

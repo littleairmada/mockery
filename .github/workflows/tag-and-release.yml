@@ -40,12 +40,12 @@ jobs:
         run: |
           set +e
           task -x tag 1>/tmp/versions.txt
+          tag_result="$?"
 
           printf "versions: $(cat /tmp/versions.txt)\n"
           echo "requested_version=$(cut -d',' -f 1 /tmp/versions.txt)" >> $GITHUB_OUTPUT
           echo "previous_version=$(cut -d',' -f 2 /tmp/versions.txt)" >> $GITHUB_OUTPUT
 
-          tag_result="$?"
           echo "tag_result=$tag_result" >> $GITHUB_OUTPUT
           # The range between 8 and 63 inclusive is reserved for custom
           # error codes that contain specific meaning.
