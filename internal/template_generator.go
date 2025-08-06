@@ -189,7 +189,7 @@ func (g *TemplateGenerator) format(src []byte) ([]byte, error) {
 	return nil, fmt.Errorf("unknown formatter type: %s", g.formatter)
 }
 
-func resolveType(t types.Type) (paramPkgPath string, paramObjName string, isPointer bool) {
+func getTypePath(t types.Type) (paramPkgPath string, paramObjName string) {
 	switch t := t.(type) {
 	case *types.Named:
 		pkg := t.Obj().Pkg()
@@ -204,10 +204,9 @@ func resolveType(t types.Type) (paramPkgPath string, paramObjName string, isPoin
 		}
 		paramObjName = t.Obj().Name()
 	case *types.Pointer:
-		paramPkgPath, paramObjName, _ = resolveType(t.Elem())
-		isPointer = true
+		paramPkgPath, paramObjName = getTypePath(t.Elem())
 	}
-	return paramPkgPath, paramObjName, isPointer
+	return paramPkgPath, paramObjName
 }
 
 func (g *TemplateGenerator) methodData(ctx context.Context, method *types.Func, ifaceConfig *config.Config) (template.Method, error) {
@@ -225,7 +224,7 @@ func (g *TemplateGenerator) methodData(ctx context.Context, method *types.Func, 
 			log.Debug().Str("import", imprt.Path()).Str("import-qualifier", imprt.Qualifier()).Msg("existing imports")
 		}
 
-		paramPkgPath, paramObjName, _ := resolveType(param.Type())
+		paramPkgPath, paramObjName := getTypePath(param.Type())
 
 		replacement := ifaceConfig.GetReplacement(paramPkgPath, paramObjName)
 		if replacement != nil {
@@ -251,7 +250,7 @@ func (g *TemplateGenerator) methodData(ctx context.Context, method *types.Func, 
 		paramCtx := paramLog.WithContext(ctx)
 		paramLog.Debug().Msg("found return")
 
-		paramPkgPath, paramObjName, _ := resolveType(param.Type())
+		paramPkgPath, paramObjName := getTypePath(param.Type())
 
 		replacement := ifaceConfig.GetReplacement(paramPkgPath, paramObjName)
 		if replacement != nil {
