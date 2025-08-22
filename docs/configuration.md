@@ -19,7 +19,7 @@ filename: mocks_test.go
 force-file-write: false
 formatter: goimports
 log-level: info
-structname: {{.Mock}}{{.InterfaceName}}
+structname: '{{.Mock}}{{.InterfaceName}}'
 pkgname: '{{.SrcPackageName}}'
 recursive: false
 template: testify
