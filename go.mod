@@ -4,7 +4,7 @@ go 1.23.7
 
 require (
 	github.com/brunoga/deep v1.2.4
-	github.com/go-viper/mapstructure/v2 v2.3.0
+	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/huandu/xstrings v1.5.0
 	github.com/jedib0t/go-pretty/v6 v6.6.7
 	github.com/knadh/koanf/parsers/yaml v0.1.0
@@ -12,7 +12,7 @@ require (
 	github.com/knadh/koanf/providers/file v1.1.2
 	github.com/knadh/koanf/providers/posflag v0.1.0
 	github.com/knadh/koanf/providers/structs v0.1.0
-	github.com/knadh/koanf/v2 v2.2.1
+	github.com/knadh/koanf/v2 v2.3.0
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
